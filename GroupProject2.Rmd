@@ -63,11 +63,12 @@ library(tibble)
 DataSet <- mutate(
   Global_Confirmed_Collapsed[,c(1, ncol(Global_Confirmed_Collapsed))] %>% 
   arrange(desc(.[,2])) %>%
-  rename(Confirmed = 2, "Country Confirmed" = 1), 
+  #Space in the name differntiates the two data columns for countries
+  rename(Confirmed = 2, "Country " = 1), 
   
   Global_Deaths_Collapsed[,c(1, ncol(Global_Deaths_Collapsed))] %>% 
   arrange(desc(.[,2])) %>%
-  rename(Deaths = 2, "Country Deaths" = 1))
+  rename(Deaths = 2, "Country" = 1))
 
 #Adding rank column and putting it at the front
 
@@ -76,7 +77,8 @@ DataSet <- DataSet %>%
   select(Rank, everything())
 
 kbl(DataSet) %>%
-  kable_styling(fixed_thead = TRUE)
+  kable_styling(fixed_thead = TRUE) %>%
+  add_header_above(c(" " = 1, "Confirmations" = 2, "Deaths" = 2))
 
 
 
