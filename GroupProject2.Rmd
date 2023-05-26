@@ -9,3 +9,75 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+```{r Objective 1}
+library(here)
+library(dplyr)
+library(tidyr)
+library(data.table)
+library(leaflet)
+
+filePath <- paste(here(), "Covid_Data", sep = "/")
+
+Global_Confirmed <- as.data.table(read.csv(paste(filePath, "Global_Confirmed.csv", sep = "/")))
+Global_Deaths <- as.data.table(read.csv(paste(filePath, "Global_Deaths.csv", sep = "/")))
+
+#Collapsing data set so each country only has 1 entry for use throughout the project
+
+Global_Deaths_Collapsed <- Global_Deaths %>%
+  group_by(Global_Deaths[[2]]) %>%
+  summarize(across(5:ncol(Global_Deaths), sum)) %>%
+  rename(Country = "Global_Deaths[[2]]")
+
+Global_Confirmed_Collapsed <- Global_Confirmed %>%
+  group_by(Global_Confirmed[[2]]) %>%
+  summarize(across(5:ncol(Global_Confirmed), sum)) %>%
+  rename(Country = "Global_Confirmed[[2]]")
+
+#Creating the mean for the Lattitude/Longitude and adding it to the column. Access via name, the positions are at the back of the data table.
+# Names are Lat and Long
+
+globalLatLong <- Global_Confirmed %>%
+  group_by(Global_Confirmed[[2]]) %>%
+  # Originally was summarize(across(3:4, mean, na.rm = TRUE)), Rstudio suggested this due to the method being depreceated 
+  summarize(across(3:4,\(x) mean(x, na.rm = TRUE)))
+
+globalLatLong <- globalLatLong[, 2:3]
+
+#Creating data table for use in leaflet, has most recent data, as well as the lattitude and longitutde of the countries
+Global_Recent_Data = mutate(Global_Confirmed_Collapsed[,c(1, ncol(Global_Confirmed_Collapsed))])
+colnames(Global_Recent_Data)[2] <- "Confirmed"
+y
+Global_Recent_Data = mutate(Global_Recent_Data, Global_Deaths_Collapsed[,c(ncol((Global_Deaths_Collapsed)))], globalLatLong)
+colnames(Global_Recent_Data)[3] <- "Deaths"
+  
+#Create Leaflet Map
+leaflet(data = Global_Recent_Data) %>% addTiles %>%
+  addMarkers(lng = ~Long, lat = ~Lat, popup = ~as.character(Country, Confirmed), label = ~as.character(Country))
+
+```
+
+```{r Objective 2}
+library(kableExtra)
+library(tibble)
+#Getting data and sorting it into descending order, keeping names of the countries consistent with data
+DataSet <- mutate(
+  Global_Confirmed_Collapsed[,c(1, ncol(Global_Confirmed_Collapsed))] %>% 
+  arrange(desc(.[,2])) %>%
+  rename(Confirmed = 2, "Country Confirmed" = 1), 
+  
+  Global_Deaths_Collapsed[,c(1, ncol(Global_Deaths_Collapsed))] %>% 
+  arrange(desc(.[,2])) %>%
+  rename(Deaths = 2, "Country Deaths" = 1))
+
+#Adding rank column and putting it at the front
+
+DataSet <- DataSet %>%
+  mutate("Rank" = row_number()) %>%
+  select(Rank, everything())
+
+kbl(DataSet) %>%
+  kable_styling(fixed_thead = TRUE)
+
+
+
+```
