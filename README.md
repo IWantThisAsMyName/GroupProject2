@@ -1,1 +1,3 @@
-# GroupProject2
+# Cody Smith
+# Camden Bartelt
+# Isaias Sanchesz Saavedra
