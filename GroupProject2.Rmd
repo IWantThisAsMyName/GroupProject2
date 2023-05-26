@@ -87,3 +87,17 @@ kbl(DataSet) %>%
 
 
 ```
+
+# Objective 3
+
+```{r Objective 3}
+
+
+```
+
+# Objective 4
+
+```{r Objective 4}
+
+
+```
