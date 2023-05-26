@@ -9,6 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Objective 1
+
 ```{r Objective 1}
 library(here)
 library(dplyr)
@@ -46,7 +48,7 @@ globalLatLong <- globalLatLong[, 2:3]
 #Creating data table for use in leaflet, has most recent data, as well as the lattitude and longitutde of the countries
 Global_Recent_Data = mutate(Global_Confirmed_Collapsed[,c(1, ncol(Global_Confirmed_Collapsed))])
 colnames(Global_Recent_Data)[2] <- "Confirmed"
-y
+
 Global_Recent_Data = mutate(Global_Recent_Data, Global_Deaths_Collapsed[,c(ncol((Global_Deaths_Collapsed)))], globalLatLong)
 colnames(Global_Recent_Data)[3] <- "Deaths"
   
@@ -55,6 +57,8 @@ leaflet(data = Global_Recent_Data) %>% addTiles %>%
   addMarkers(lng = ~Long, lat = ~Lat, popup = ~as.character(Country, Confirmed), label = ~as.character(Country))
 
 ```
+
+# Objective 2
 
 ```{r Objective 2}
 library(kableExtra)
