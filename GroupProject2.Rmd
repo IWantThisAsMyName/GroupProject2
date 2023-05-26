@@ -1,0 +1,11 @@
+---
+title: "GroupProject2"
+author: "Camden Bartelt Cody Smith Isaias Sanchesz Saavedra"
+date: "2023-05-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
