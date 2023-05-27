@@ -1,3 +1,3 @@
-# Cody Smith
-# Camden Bartelt - WHO
-# Isaias Sanchesz Saavedra
+# Cody Smith - N/A
+# Camden Bartelt - WHO & USPRT
+# Isaias Sanchesz Saavedra - N/A
