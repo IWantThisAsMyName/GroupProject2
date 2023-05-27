@@ -54,7 +54,24 @@ colnames(Global_Recent_Data)[3] <- "Deaths"
   
 #Create Leaflet Map
 leaflet(data = Global_Recent_Data) %>% addTiles %>%
-  addMarkers(lng = ~Long, lat = ~Lat, popup = ~as.character(Country, Confirmed), label = ~as.character(Country))
+  addCircleMarkers(
+    lng = ~Long, 
+    lat = ~Lat, 
+    popup = ~paste("Confirmed: ", format(Confirmed, big.mark = ",")), 
+    label = ~as.character(Country),
+    group = "Confirmations"
+  ) %>%
+  addCircleMarkers(
+    lng = ~Long, 
+    lat = ~Lat, 
+    popup = ~paste("Deaths: ", format(Deaths, big.mark = ",")), 
+    label = ~as.character(Country),
+    group = "Deaths"
+  ) %>%
+  addLayersControl(
+    baseGroups = c("Confirmations", "Deaths"),
+    options = layersControlOptions(collapsed = FALSE)
+  )
 
 ```
 
@@ -82,7 +99,8 @@ DataSet <- DataSet %>%
 
 kbl(DataSet) %>%
   kable_styling(fixed_thead = TRUE) %>%
-  add_header_above(c(" " = 1, "Confirmations" = 2, "Deaths" = 2))
+  add_header_above(c(" " = 1, "Confirmations" = 2, "Deaths" = 2)) %>%
+  scroll_box(width = "800px", height = "400px")
 
 
 
