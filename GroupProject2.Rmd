@@ -145,7 +145,7 @@ California_Top3$Date <- as.Date(California_Top3$Date, format = "%m/%d/%Y")
 
 plotTotal <- ggplot(California_Total_Confirmations, aes(x = Date, y = Confirmations)) +
                 geom_line(size = 2)+
-                labs(x = "Date", y = "Cases") +
+                labs(x = "Date", y = "Cases", title = "COVID-19 confirmations in California") +
                 scale_y_continuous(labels = scales::comma_format())+ 
                 #Lining up edges of plots
                 theme(plot.margin = margin(0,100,0,0))
