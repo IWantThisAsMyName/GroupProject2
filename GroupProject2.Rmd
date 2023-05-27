@@ -51,7 +51,11 @@ colnames(Global_Recent_Data)[2] <- "Confirmed"
 
 Global_Recent_Data = mutate(Global_Recent_Data, Global_Deaths_Collapsed[,c(ncol((Global_Deaths_Collapsed)))], globalLatLong)
 colnames(Global_Recent_Data)[3] <- "Deaths"
-  
+
+colorDeaths <- colorQuantile(c("darkblue","darkgray", "red"), Global_Recent_Data$Deaths, n = 9)
+
+colorConfirmed <- colorQuantile(c("darkblue","darkgray", "red"), Global_Recent_Data$Confirmed, n = 9)
+
 #Create Leaflet Map
 leaflet(data = Global_Recent_Data) %>% addTiles %>%
   addCircleMarkers(
@@ -59,14 +63,20 @@ leaflet(data = Global_Recent_Data) %>% addTiles %>%
     lat = ~Lat, 
     popup = ~paste("Confirmed: ", format(Confirmed, big.mark = ",")), 
     label = ~as.character(Country),
-    group = "Confirmations"
+    color = ~colorConfirmed(Confirmed),
+    group = "Confirmations",
+    fillOpacity = 0.7,
+    radius = 3
   ) %>%
   addCircleMarkers(
     lng = ~Long, 
     lat = ~Lat, 
     popup = ~paste("Deaths: ", format(Deaths, big.mark = ",")), 
     label = ~as.character(Country),
-    group = "Deaths"
+    color = ~colorDeaths(Deaths),
+    group = "Deaths",
+    fillOpacity = 0.7,
+    radius = 3
   ) %>%
   addLayersControl(
     baseGroups = c("Confirmations", "Deaths"),
@@ -83,13 +93,13 @@ library(tibble)
 #Getting data and sorting it into descending order, keeping names of the countries consistent with data
 DataSet <- mutate(
   Global_Confirmed_Collapsed[,c(1, ncol(Global_Confirmed_Collapsed))] %>% 
-  arrange(desc(.[,2])) %>%
-  #Space in the name differntiates the two data columns for countries
-  rename(Confirmed = 2, "Country " = 1), 
+    arrange(desc(.[,2])) %>%
+    #Space in the name differntiates the two data columns for countries
+    rename(Confirmed = 2, "Country " = 1), 
   
   Global_Deaths_Collapsed[,c(1, ncol(Global_Deaths_Collapsed))] %>% 
-  arrange(desc(.[,2])) %>%
-  rename(Deaths = 2, "Country" = 1))
+    arrange(desc(.[,2])) %>%
+    rename(Deaths = 2, "Country" = 1))
 
 #Adding rank column and putting it at the front
 
@@ -109,13 +119,75 @@ kbl(DataSet) %>%
 # Objective 3
 
 ```{r Objective 3}
+library(stringr)
+library(ggplot2)
+library(scales)
+library(cowplot)
+#Load sorted data for california locations and sort in descending order
+US_Confirmations = as.data.table(read.csv(paste(filePath, "US_Confirmed.csv", sep = "/")))[, -c(1:5, 8, 11)]
+California_Confirmations <- US_Confirmations %>%
+  filter(Province_State == "California") %>%
+  arrange(desc(across(ncol(.))))
 
+#Summarize all of california data, and then fix dates
+California_Total_Confirmations <- California_Confirmations %>%
+  summarize(across(5:ncol(California_Confirmations), sum)) %>%
+  gather(key = "Date", value = "Confirmations")
+California_Total_Confirmations$Date <-str_replace_all(California_Total_Confirmations$Date, c("X" = "", "\\." = "/"))
+California_Total_Confirmations$Date <- as.Date(California_Total_Confirmations$Date, format = "%m/%d/%Y")
+
+#Get top 3 cities, convert to long, and fix the date column to actually be dates
+California_Top3 <- California_Confirmations[,-c(2:4)] %>%
+  head(3) %>%
+  pivot_longer(cols = -"Admin2", names_to = "Date", values_to = "Confirmations")
+California_Top3$Date <-str_replace_all(California_Top3$Date, c("X" = "", "\\." = "/"))
+California_Top3$Date <- as.Date(California_Top3$Date, format = "%m/%d/%Y")
+
+plotTotal <- ggplot(California_Total_Confirmations, aes(x = Date, y = Confirmations)) +
+                geom_line(size = 2)+
+                labs(x = "Date", y = "Cases") +
+                scale_y_continuous(labels = scales::comma_format())+ 
+                #Lining up edges of plots
+                theme(plot.margin = margin(0,100,0,0))
+plotTop3 <- ggplot(California_Top3, aes(x = Date, y = Confirmations, color = Admin2)) +
+                geom_line(size = 1.5) +
+                scale_color_manual(values = setNames(c("darkblue", "darkviolet", "blue"), unique(California_Top3$Admin2))) + 
+                labs(x = "Date", y = "Cases", color = "") +
+                scale_y_continuous(labels = scales::comma_format(width = 11.7))
+plot_grid(
+  plotTotal,
+  plotTop3,
+  align = "Center",
+  ncol = 1
+)
 
 ```
 
 # Objective 4
 
 ```{r Objective 4}
+US_Deaths = as.data.table(read.csv(paste(filePath, "US_Deaths.csv", sep = "/")))
 
+ConfirmPop = mutate(US_Deaths[,12:12], US_Confirmations[,ncol(US_Confirmations):ncol(US_Confirmations)]) %>%
+  rename(Population = 1, Cases = 2)
 
+DeathConfirm = US_Deaths[,ncol(US_Deaths):ncol(US_Deaths)] %>%
+  #Since both CSVs last data point will be the same date, the data would be overwritten, so I renamed and then mutated in the data set for confirmations
+  rename(Deaths = 1) %>%
+  mutate(.,US_Confirmations[,ncol(US_Confirmations):ncol(US_Confirmations)]) %>%
+  rename(Cases = 2)
+
+plot1 <- ggplot(ConfirmPop, aes(x = Population, y = Cases)) +
+                  geom_point(color = "blue") +
+                  labs(x = "Population", y = "Confirmation Counts", title = "Confirmations Vs. Population") +
+                  scale_x_log10() + scale_y_log10()
+plot2 <- ggplot(DeathConfirm, aes(x = Cases, y = Deaths)) +
+                  geom_point(color = "red") +
+                  labs(x = "Confirmation Counts", y = "Death Counts", title = "Deaths Vs. Confirmations") +
+                  scale_x_log10() + scale_y_log10()
+
+plot_grid(
+  plot1, 
+  plot2
+)
 ```
