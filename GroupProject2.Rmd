@@ -52,6 +52,7 @@ colnames(Global_Recent_Data)[2] <- "Confirmed"
 Global_Recent_Data = mutate(Global_Recent_Data, Global_Deaths_Collapsed[,c(ncol((Global_Deaths_Collapsed)))], globalLatLong)
 colnames(Global_Recent_Data)[3] <- "Deaths"
 
+#Defining color quantiles for the leaflet map
 colorDeaths <- colorQuantile(c("darkblue","darkgray", "red"), Global_Recent_Data$Deaths, n = 9)
 
 colorConfirmed <- colorQuantile(c("darkblue","darkgray", "red"), Global_Recent_Data$Confirmed, n = 9)
@@ -59,6 +60,7 @@ colorConfirmed <- colorQuantile(c("darkblue","darkgray", "red"), Global_Recent_D
 #Create Leaflet Map
 leaflet(data = Global_Recent_Data) %>% addTiles %>%
   addCircleMarkers(
+    #Creating markers for confirmed
     lng = ~Long, 
     lat = ~Lat, 
     popup = ~paste("Confirmed: ", format(Confirmed, big.mark = ",")), 
@@ -69,6 +71,7 @@ leaflet(data = Global_Recent_Data) %>% addTiles %>%
     radius = 3
   ) %>%
   addCircleMarkers(
+    #Creating markers for deaths
     lng = ~Long, 
     lat = ~Lat, 
     popup = ~paste("Deaths: ", format(Deaths, big.mark = ",")), 
@@ -79,6 +82,7 @@ leaflet(data = Global_Recent_Data) %>% addTiles %>%
     radius = 3
   ) %>%
   addLayersControl(
+    #Chose base groups instead of layered so that you would only have one visible at a time
     baseGroups = c("Confirmations", "Deaths"),
     options = layersControlOptions(collapsed = FALSE)
   )
@@ -108,6 +112,7 @@ DataSet <- DataSet %>%
   select(Rank, everything())
 
 kbl(DataSet) %>%
+  #Keeping header at top even after scrolling down
   kable_styling(fixed_thead = TRUE) %>%
   add_header_above(c(" " = 1, "Confirmations" = 2, "Deaths" = 2)) %>%
   scroll_box(width = "800px", height = "400px")
@@ -144,16 +149,36 @@ California_Top3$Date <-str_replace_all(California_Top3$Date, c("X" = "", "\\." =
 California_Top3$Date <- as.Date(California_Top3$Date, format = "%m/%d/%Y")
 
 plotTotal <- ggplot(California_Total_Confirmations, aes(x = Date, y = Confirmations)) +
-                geom_line(size = 2)+
+                #Creating plot and vertical lines with text labels
+                geom_line(linewidth = 2) +
+                geom_vline(xintercept = as.Date(c("0020-03-19", "0021-01-29", "0021-07-4", "0021-12-20")), 
+                           linetype = "dashed", color = c("blue", "blue", "red", "red"),
+                           linewidth = 1) +
+                #Errors were being thrown so I decided to create a new data frame for the labels and pass that in, and it worked. 
+                geom_text(data = data.frame(x = as.Date(c("0020-03-19", "0021-01-29", "0021-07-4", "0021-12-20")),
+                                           y = 7500000, label = c("SAH", "EUA\n +6 Weeks", "Delta", "Omicron")),
+                          aes(x = x, y = y, label = label),
+                          vjust = -0.5,
+                          hjust = 1.1,
+                          size = 3) +
                 labs(x = "Date", y = "Cases", title = "COVID-19 confirmations in California") +
-                scale_y_continuous(labels = scales::comma_format())+ 
-                #Lining up edges of plots
-                theme(plot.margin = margin(0,100,0,0))
+                #Shrinking down text so it doesnt overlap
+                scale_x_date(breaks = as.Date(c("0020-03-19", "0021-01-29", "0021-07-4", "0021-12-20")),
+                  labels = c("0020-03-19", "0021-01-29", "0021-07-4", "0021-12-20") ) +
+                #Commas for y axis
+                scale_y_continuous(labels = scales::comma_format()) +
+                #Compressing the graphs width a bit to make the two graphs nearly the same size
+                theme(plot.margin = margin(0, 100, 0, 0), axis.text.x = element_text(size = 8))
 plotTop3 <- ggplot(California_Top3, aes(x = Date, y = Confirmations, color = Admin2)) +
-                geom_line(size = 1.5) +
+                geom_line(linewidth = 1.5) +
+                geom_vline(xintercept = as.Date(c("0020-03-19", "0021-01-29", "0021-07-4", "0021-12-20")), 
+                           linetype = "dashed", color = c("blue", "blue", "red", "red"),
+                           linewidth = 1) +
                 scale_color_manual(values = setNames(c("darkblue", "darkviolet", "blue"), unique(California_Top3$Admin2))) + 
                 labs(x = "Date", y = "Cases", color = "") +
-                scale_y_continuous(labels = scales::comma_format(width = 11.7))
+                scale_y_continuous(labels = scales::comma_format(width = 8))
+
+#Create plot grid with the 2 graphs on top of eachother
 plot_grid(
   plotTotal,
   plotTop3,
@@ -177,15 +202,18 @@ DeathConfirm = US_Deaths[,ncol(US_Deaths):ncol(US_Deaths)] %>%
   mutate(.,US_Confirmations[,ncol(US_Confirmations):ncol(US_Confirmations)]) %>%
   rename(Cases = 2)
 
+#Creating first plot with a logmarithic scaling
 plot1 <- ggplot(ConfirmPop, aes(x = Population, y = Cases)) +
                   geom_point(color = "blue") +
                   labs(x = "Population", y = "Confirmation Counts", title = "Confirmations Vs. Population") +
-                  scale_x_log10() + scale_y_log10()
+                  scale_x_log10(labels = scales::comma_format(width = 8)) + scale_y_log10(labels = scales::comma_format(width = 8))
+#Creating second plot with a logmarithic scaling
 plot2 <- ggplot(DeathConfirm, aes(x = Cases, y = Deaths)) +
                   geom_point(color = "red") +
-                  labs(x = "Confirmation Counts", y = "Death Counts", title = "Deaths Vs. Confirmations") +
-                  scale_x_log10() + scale_y_log10()
-
+                  labs(x = "Confirmation Counts", y = "Death Counts", title = "Deaths Vs. Confirmations") + 
+                  scale_x_log10(labels = scales::comma_format(width = 8)) + scale_y_log10(labels = scales::comma_format(width = 8))
+                  
+#Creating output with the graphs side by side
 plot_grid(
   plot1, 
   plot2
